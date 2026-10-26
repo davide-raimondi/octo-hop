@@ -1,44 +1,39 @@
 # 🐙 Octo-Hop Deluxe
 
-![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
-![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-00FA9A?style=for-the-badge)
+> Arcade subacqueo a scorrimento con biomi dinamici, sistema di ricompense near-miss e negozio di skin, sviluppato in un singolo file HTML.
 
-**Octo-Hop Deluxe** è un videogioco arcade sottomarino *mobile-first* ispirato a Flappy Bird, interamente sviluppato in **Vanilla JavaScript** e **HTML5 Canvas** all'interno di un singolo file (`index.html`), senza l'uso di librerie o asset esterni.
+[![Gioca Ora](https://img.shields.io/badge/GIOCA%20ORA-Live%20su%20GitHub%20Pages-success?style=for-the-badge&logo=github)](https://davide-raimondi.github.io/octo-hop/)
 
-🎮 **[GIOCA ALLA DEMO LIVE SU GITHUB PAGES](https://davide23567.github.io/octo-hop/)**
+**Octo-Hop Deluxe** è un endless arcade ambientato negli abissi marini, progettato con controlli one-touch immediati e un sistema di progressione che premia la precisione del giocatore.
 
----
+## ✨ Funzionalità Principali
 
-## ✨ Caratteristiche Principali
+- 🌊 **Biomi Subacquei Dinamici**: Scenari che cambiano progressivamente durante la partita con ostacoli ed effetti ambientali dedicati.
+- 🎯 **Sistema Near-Miss**: Ottieni punti bonus e moltiplicatori effettuando passaggi "al pelo" vicino agli ostacoli.
+- 🎨 **Shop & Skin Personalizzabili**: Sblocca nuove estetiche per personalizzare il tuo personaggio.
+- 🚀 **Single-File Architecture**: Codice interamente racchiuso in un unico file HTML, CSS e JavaScript per un caricamento istantaneo.
 
-* **🌊 Biomi Dinamici & Coralli Mobili:** Il fondale cambia atmosfera e palette cromatica man mano che il punteggio sale (Laguna Turchese, Zona Crepuscolare, Fossa Abissale, Corallo Lavico). Superati i 15 punti, gli ostacoli iniziano a muoversi verticalmente.
-* **⚡ Power-Up & Valuta di Gioco:**
-  * ⚪ **Perla Normale (+1):** Valuta base per gli acquisti nel negozio.
-  * 🟡 **Perla Dorata (+5):** Rara e preziosa.
-  * 🛡️ **Scudo Bolla:** Assorbe un impatto fatale contro i coralli o i bordi dello schermo.
-  * 🧲 **Magnete:** Attira automaticamente tutte le perle nelle vicinanze per 8 secondi.
-* **🔥 Sistema "Near Miss" (Passaggio al Pelo):** Sfiora i coralli senza toccarli per ottenere un bonus immediato di **+2 Perle** ed effetti visivi dedicati.
-* **🛒 Negozio Skin Integrato:** Sblocca ed equipaggia 10 creature marine (dal Polpo 🐙 fino all'Orca 🐋 e al Pinguino 🐧).
-* **🎵 Audio 8-Bit Procedurale:** Effetti sonori retro sintetizzati in tempo reale tramite **Web Audio API** (nessun file `.mp3` o `.wav` esterno).
-* **🎨 Fisica "Juicy" & Parallasse:** Animazioni *Squash & Stretch* sul salto, scia idrodinamica, particelle, *screen shake*, raggi solari subacquei e fondale in parallasse.
-* **🌍 Multilingua & Salvataggi Automatici:** Traduzione istantanea **Italiano / Inglese** e salvataggio automatico di Record, Perle, Skin e preferenze tramite `localStorage`.
+## 🛠 Tecnologie Utilizzate
 
----
+- **HTML5 Canvas** per le animazioni fluide, le bolle particellari e i fondali dinamici.
+- **CSS3** per l'interfaccia dello shop, i menu e l'ottimizzazione mobile-first.
+- **Vanilla JavaScript (ES6+)** per la fisica del movimento, il sistema di punteggio, il salvataggio locale e la **Web Audio API**.
 
-## 🕹️ Come Giocare
+## 🕹 Come Giocare
 
-* **Smartphone / Tablet:** Tocca qualsiasi punto dello schermo per nuotare verso l'alto.
-* **PC / Desktop:** Clicca con il tasto sinistro del mouse per nuotare.
+Gioca subito online dal tuo browser mobile o desktop:
 
----
+👉 **[Gioca ora a Octo-Hop Deluxe su GitHub Pages](https://davide-raimondi.github.io/octo-hop/)**
 
-## 🚀 Installazione ed Esecuzione Locale
-
-Il progetto è racchiuso in un'architettura **Single-File** per garantire massima portabilità e caricamento istantaneo:
-
+### Esecuzione in Locale
 1. Clona il repository:
-   ```bash
-   git clone [https://github.com/davide23567/octo-hop.git](https://github.com/davide23567/octo-hop.git)
-   
+```bash
+git clone [https://github.com/davide-raimondi/octo-hop.git](https://github.com/davide-raimondi/octo-hop.git)
+```
+2. Apri il file `index.html` in qualsiasi browser moderno.
+
+## 🤝 Crediti e Contatti
+
+Sviluppato da **Davide Raimondi**.
+- **GitHub**: [@davide-raimondi](https://github.com/davide-raimondi)
+- **Instagram**: [@davide.raimondi94](https://www.instagram.com/davide.raimondi94)
