@@ -40,5 +40,5 @@ Il progetto è racchiuso in un'architettura **Single-File** per garantire massim
 
 1. Clona il repository:
    ```bash
-   git clone [https://github.com/davide23567/Octo-Hop.git](https://github.com/davide23567/Octo-Hop.git)
+   git clone [https://github.com/davide23567/octo-hop.git](https://github.com/davide23567/octo-hop.git)
    
