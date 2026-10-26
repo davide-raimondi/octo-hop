@@ -7,7 +7,7 @@
 
 **Octo-Hop Deluxe** è un videogioco arcade sottomarino *mobile-first* ispirato a Flappy Bird, interamente sviluppato in **Vanilla JavaScript** e **HTML5 Canvas** all'interno di un singolo file (`index.html`), senza l'uso di librerie o asset esterni.
 
-🎮 **[GIOCA ALLA DEMO LIVE SU GITHUB PAGES](https://davide23567.github.io/Octo-Hop/)**
+🎮 **[GIOCA ALLA DEMO LIVE SU GITHUB PAGES](https://davide23567.github.io/octo-hop/)**
 
 ---
 
