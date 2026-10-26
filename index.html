@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Octo-Hop Deluxe</title>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            margin: 0; overflow: hidden; background: #001133;
+            touch-action: none; font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+            user-select: none;
+        }
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        #ui { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            pointer-events: none; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; z-index: 999; 
+        }
+
+        /* HUD In-Game */
+        #hud {
+            position: absolute; top: 4%; width: 92%; display: none;
+            justify-content: space-between; align-items: flex-start;
+            pointer-events: none;
+        }
+        .hud-badge {
+            background: rgba(0, 15, 30, 0.65); backdrop-filter: blur(6px);
+            border: 2px solid rgba(32, 178, 170, 0.5); padding: 6px 18px;
+            border-radius: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        #scoreDisplay { margin: 0; font-size: 34px; color: #fff; font-weight: 900; text-shadow: 0 2px 5px rgba(0,0,0,0.8); line-height: 1; }
+        #pearlInGameDisplay { color: #FFD700; font-size: 15px; font-weight: bold; margin-top: 2px; }
+        
+        #btnPause {
+            pointer-events: auto; background: rgba(0, 15, 30, 0.65);
+            border: 2px solid rgba(255,255,255,0.3); color: white;
+            width: 46px; height: 46px; border-radius: 50%; font-size: 20px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+        #btnPause:active { transform: scale(0.92); }
+
+        /* Indicatori Power-up attivi */
+        #powerupHud {
+            position: absolute; top: 14%; left: 4%; display: flex; flex-direction: column; gap: 6px;
+        }
+        .pu-tag {
+            background: rgba(0, 0, 0, 0.6); border-left: 4px solid #00FA9A;
+            color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: bold;
+        }
+
+        /* Schermate Menu Glassmorphism */
+        .menu-screen {
+            background: rgba(0, 18, 36, 0.88); backdrop-filter: blur(10px);
+            border: 3px solid #20B2AA; border-radius: 24px; padding: 22px;
+            text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), 0 0 25px rgba(32, 178, 170, 0.3);
+            width: 90%; max-width: 340px; pointer-events: auto; display: none;
+            max-height: 88vh; overflow-y: auto; animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn {
+            from { transform: scale(0.85); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .menu-screen::-webkit-scrollbar { width: 6px; }
+        .menu-screen::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+        .menu-screen::-webkit-scrollbar-thumb { background: #20B2AA; border-radius: 10px; }
+
+        h2 { color: #fff; margin: 0 0 6px 0; font-size: 30px; text-shadow: 0 3px 0 #004d4d; letter-spacing: 0.5px; }
+        p { color: #b0c4de; font-size: 15px; margin: 6px 0; }
+        
+        .pearl-pill { 
+            color: #fff; font-weight: bold; background: linear-gradient(90deg, rgba(255,215,0,0.2), rgba(32,178,170,0.2));
+            border: 1px solid rgba(255,215,0,0.5); padding: 6px 16px; border-radius: 20px; 
+            display: inline-block; margin: 6px 0 10px 0; font-size: 16px;
+        }
+
+        /* Medaglia Game Over */
+        .medal-box {
+            background: rgba(255,255,255,0.06); border-radius: 16px; padding: 12px;
+            margin: 10px 0; border: 1px solid rgba(255,255,255,0.1);
+            display: flex; align-items: center; justify-content: space-around;
+        }
+        .medal-icon { font-size: 44px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
+        .score-details { text-align: left; }
+        .score-details div { color: #fff; font-size: 16px; margin: 2px 0; }
+        .new-badge {
+            background: #ff4757; color: white; font-size: 11px; padding: 2px 6px;
+            border-radius: 6px; font-weight: bold; vertical-align: middle; margin-left: 5px;
+            display: none; animation: pulse 1s infinite alternate;
+        }
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
+
+        .btn-container { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+        .btn {
+            background: linear-gradient(180deg, #20B2AA, #008080); border: none; color: white;
+            padding: 13px; font-size: 17px; font-weight: 800; border-radius: 14px;
+            cursor: pointer; box-shadow: 0 5px 0 #004d4d, 0 6px 15px rgba(0,0,0,0.3);
+            transition: transform 0.1s; width: 100%; letter-spacing: 0.5px;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #004d4d; }
+        .btn-shop { background: linear-gradient(180deg, #9b59b6, #6c3483); box-shadow: 0 5px 0 #4a235a; }
+        .btn-settings { background: linear-gradient(180deg, #576574, #222f3e); box-shadow: 0 5px 0 #11171f; }
+        .btn-secondary { background: linear-gradient(180deg, #ff6b6b, #c0392b); box-shadow: 0 5px 0 #78281f; }
+
+        /* Negozio */
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+        .shop-item {
+            background: rgba(255,255,255,0.07); border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 16px; padding: 10px; text-align: center;
+            display: flex; flex-direction: column; align-items: center; transition: 0.2s;
+        }
+        .shop-item.equipped { border-color: #00FA9A; background: rgba(0, 250, 154, 0.15); box-shadow: 0 0 15px rgba(0,250,154,0.2); }
+        .shop-emoji { font-size: 36px; margin-bottom: 4px; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.4)); }
+        .shop-btn {
+            background: #444; border: none; color: white; padding: 6px 10px;
+            border-radius: 8px; font-weight: bold; width: 100%; margin-top: 6px; cursor: pointer; font-size: 13px;
+        }
+        .shop-btn.buy { background: linear-gradient(180deg, #FFD700, #FFA500); color: #000; box-shadow: 0 3px 0 #b37400; }
+        .shop-btn.equip { background: #20B2AA; box-shadow: 0 3px 0 #005f5f; }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <!-- HUD DI GIOCO -->
+        <div id="hud">
+            <div class="hud-badge">
+                <div id="scoreDisplay">0</div>
+                <div id="pearlInGameDisplay">⚪ 0</div>
+            </div>
+            <button id="btnPause" onclick="togglePause()">⏸️</button>
+        </div>
+        <div id="powerupHud"></div>
+
+        <!-- MENU PRINCIPALE -->
+        <div id="startScreen" class="menu-screen" style="display: block;">
+            <h2>🐙 Octo-Hop</h2>
+            <div class="pearl-pill" id="menuPearlTotal">⚪ 0</div>
+            <p id="txtSubtitle">Schiva i coralli, fai passaggi al pelo e raccogli i potenziamenti!</p>
+            <div class="btn-container">
+                <button class="btn" id="btnPlay" onclick="startGame()">▶ Gioca</button>
+                <button class="btn btn-shop" id="btnShopMenu" onclick="openShop()">🛒 Negozio</button>
+                <button class="btn btn-settings" id="btnSettingsMenu" onclick="openSettings()">⚙️ Impostazioni</button>
+            </div>
+        </div>
+
+        <!-- MENU PAUSA -->
+        <div id="pauseScreen" class="menu-screen">
+            <h2 id="titlePause">In Pausa</h2>
+            <div class="btn-container">
+                <button class="btn" id="btnResume" onclick="togglePause()">▶ Riprendi</button>
+                <button class="btn btn-secondary" id="btnPauseMenu" onclick="backToMenu()">🏠 Menu Principale</button>
+            </div>
+        </div>
+
+        <!-- IMPOSTAZIONI -->
+        <div id="settingsScreen" class="menu-screen">
+            <h2 id="titleSettings">Impostazioni</h2>
+            <div class="btn-container">
+                <button class="btn" id="btnLangToggle" onclick="toggleLang()">🇮🇹 Lingua: Italiano</button>
+                <button class="btn" id="btnAudioToggle" onclick="toggleAudio()">🔊 Audio: ON</button>
+                <button class="btn btn-secondary" id="btnBackSettings" onclick="closeSettings()">🔙 Indietro</button>
+            </div>
+        </div>
+
+        <!-- NEGOZIO -->
+        <div id="shopScreen" class="menu-screen">
+            <h2 id="titleShop">Negozio</h2>
+            <div class="pearl-pill" id="shopPearlTotal">⚪ 0</div>
+            <div class="shop-grid" id="shopContainer"></div>
+            <div class="btn-container">
+                <button class="btn btn-secondary" id="btnBackShop" onclick="closeShop()">🔙 Indietro</button>
+            </div>
+        </div>
+
+        <!-- GAME OVER -->
+        <div id="gameOverScreen" class="menu-screen">
+            <h2 id="titleGameOver">Game Over</h2>
+            
+            <div class="medal-box">
+                <div class="medal-icon" id="medalIcon">🥉</div>
+                <div class="score-details">
+                    <div id="finalScore">Punteggio: 0</div>
+                    <div>
+                        <span id="highScore" style="color: #FFD700; font-weight: bold;">Record: 0</span>
+                        <span id="newRecordBadge" class="new-badge">NEW!</span>
+                    </div>
+                    <div id="earnedPearlsTxt" style="color: #00FA9A; font-size: 14px; font-weight: bold;">+0 ⚪</div>
+                </div>
+            </div>
+
+            <div class="pearl-pill" id="gameOverPearlTotal">⚪ 0</div>
+            <div class="btn-container">
+                <button class="btn" id="btnRetry" onclick="startGame()">🔄 Riprova</button>
+                <button class="btn btn-secondary" id="btnMenu" onclick="backToMenu()">🏠 Menu Principale</button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resize() {
+            canvas.width = window.innerWidth; 
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize); 
+        resize();
+
+        // STATI E VARIABILI GLOBALI
+        let gameState = "MENU"; // MENU, PLAYING, PAUSED, GAMEOVER
+        let frames = 0, score = 0, sessionPearls = 0;
+        let obstacles = [], bubbles = [], bgFish = [], particles = [], floatingTexts = [], bgHills = [];
+        let framesUntilSpawn = 0;
+        let screenShake = 0;
+
+        // SALVATAGGI
+        let highScore = parseInt(localStorage.getItem("octoHighScore")) || 0;
+        let pearlsTotal = parseInt(localStorage.getItem("octoPearls")) || 0;
+        let unlockedSkins = JSON.parse(localStorage.getItem("octoUnlocked")) || ["🐙"];
+        let currentSkin = localStorage.getItem("octoCurrentSkin") || "🐙";
+        let currentLang = localStorage.getItem("octoLang") || "it";
+        let isAudioEnabled = localStorage.getItem("octoAudio") !== "false";
+
+        // DIZIONARIO TRADUZIONI
+        const dict = {
+            it: {
+                subtitle: "Schiva i coralli, fai passaggi al pelo e raccogli i potenziamenti!",
+                play: "▶ Gioca", shopMenu: "🛒 Negozio", settingsMenu: "⚙️ Impostazioni",
+                settingsTitle: "Impostazioni", shopTitle: "Negozio", back: "🔙 Indietro",
+                langBtn: "🇮🇹 Lingua: Italiano", audioOn: "🔊 Audio: ON", audioOff: "🔇 Audio: OFF",
+                gameOver: "Game Over", score: "Punteggio", record: "Record", pearls: "Perle",
+                total: "Totali", retry: "🔄 Riprova", mainMenu: "🏠 Menu Principale",
+                equip: "Usa", equipped: "In Uso", noPearls: "Non hai abbastanza perle!",
+                pauseTitle: "In Pausa", resume: "▶ Riprendi", nearMiss: "AL PELO! +2",
+                shieldOn: "🛡️ Scudo Attivo", magnetOn: "🧲 Magnete", shieldBreak: "SCUDO SALVAVITA!"
+            },
+            en: {
+                subtitle: "Dodge corals, perform near misses and grab power-ups!",
+                play: "▶ Play", shopMenu: "🛒 Shop", settingsMenu: "⚙️ Settings",
+                settingsTitle: "Settings", shopTitle: "Shop", back: "🔙 Back",
+                langBtn: "🇬🇧 Language: English", audioOn: "🔊 Audio: ON", audioOff: "🔇 Audio: OFF",
+                gameOver: "Game Over", score: "Score", record: "Best", pearls: "Pearls",
+                total: "Total", retry: "🔄 Retry", mainMenu: "🏠 Main Menu",
+                equip: "Equip", equipped: "Equipped", noPearls: "Not enough pearls!",
+                pauseTitle: "Paused", resume: "▶ Resume", nearMiss: "CLOSE CALL! +2",
+                shieldOn: "🛡️ Shield Active", magnetOn: "🧲 Magnet", shieldBreak: "SHIELD SAVED YOU!"
+            }
+        };
+
+        // NEGOZIO
+        const shopItems = [
+            { emoji: "🐙", nameIT: "Polpo", nameEN: "Octopus", cost: 0 },
+            { emoji: "🦑", nameIT: "Calamaro", nameEN: "Squid", cost: 50 },
+            { emoji: "🐡", nameIT: "Palla", nameEN: "Puffer", cost: 150 },
+            { emoji: "🦀", nameIT: "Granchio", nameEN: "Crab", cost: 300 },
+            { emoji: "🐢", nameIT: "Tartaruga", nameEN: "Turtle", cost: 600 },
+            { emoji: "🐬", nameIT: "Delfino", nameEN: "Dolphin", cost: 1000 },
+            { emoji: "🦈", nameIT: "Squalo", nameEN: "Shark", cost: 2000 },
+            { emoji: "🐋", nameIT: "Orca", nameEN: "Orca", cost: 3500 },
+            { emoji: "🧜‍♀️", nameIT: "Sirena", nameEN: "Mermaid", cost: 5000 },
+            { emoji: "🐧", nameIT: "Pinguino", nameEN: "Penguin", cost: 7500 }
+        ];
+
+        // BIOMI DINAMICI (Cambiano ogni 12 punti)
+        const biomes = [
+            { top: "#0099cc", bot: "#001a33", coral1: "#006666", coral2: "#20B2AA", tip: "#00FA9A" }, // Laguna
+            { top: "#3a1c71", bot: "#11052C", coral1: "#8E2DE2", coral2: "#4A00E0", tip: "#FF007F" }, // Crepuscolo
+            { top: "#0f2027", bot: "#05080a", coral1: "#114357", coral2: "#F29492", tip: "#00FFFF" }, // Abisso
+            { top: "#b21f1f", bot: "#1a0000", coral1: "#ff4b1f", coral2: "#ff9068", tip: "#FFD700" }  // Corallo Lavico
+        ];
+
+        // SINTETIZZATORE AUDIO 8-BIT AVANZATO
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        
+        function initAudio() {
+            if (!isAudioEnabled) return;
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playSound(type) {
+            if (!audioCtx || !isAudioEnabled) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            let now = audioCtx.currentTime;
+            
+            if (type === 'flap') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(280, now);
+                osc.frequency.exponentialRampToValueAtTime(520, now + 0.09);
+                gain.gain.setValueAtTime(0.08, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
+                osc.start(now); osc.stop(now + 0.09);
+            } else if (type === 'score') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(587.33, now);
+                osc.frequency.setValueAtTime(880, now + 0.06);
+                gain.gain.setValueAtTime(0.08, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+                osc.start(now); osc.stop(now + 0.14);
+            } else if (type === 'pearl') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(987.77, now);
+                osc.frequency.exponentialRampToValueAtTime(1480, now + 0.15);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+                osc.start(now); osc.stop(now + 0.18);
+            } else if (type === 'gold') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(880, now);
+                osc.frequency.setValueAtTime(1174, now + 0.06);
+                osc.frequency.setValueAtTime(1760, now + 0.12);
+                gain.gain.setValueAtTime(0.12, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+                osc.start(now); osc.stop(now + 0.28);
+            } else if (type === 'powerup') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.25);
+                gain.gain.setValueAtTime(0.12, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now); osc.stop(now + 0.25);
+            } else if (type === 'shieldBreak') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(500, now);
+                osc.frequency.exponentialRampToValueAtTime(120, now + 0.22);
+                gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+                osc.start(now); osc.stop(now + 0.22);
+            } else if (type === 'die') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(35, now + 0.35);
+                gain.gain.setValueAtTime(0.18, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc.start(now); osc.stop(now + 0.35);
+            }
+        }
+
+        // IL GIOCATORE CON FISICA SQUASH & STRETCH + SCIA
+        const player = {
+            x: 0, y: 0, size: 35, velocity: 0, gravity: 0.34, jump: -7.4, rotation: 0,
+            scaleX: 1, scaleY: 1, shield: false, magnetTimer: 0, invulnTimer: 0, trail: [],
+            init: function() {
+                this.x = canvas.width * 0.26; this.y = canvas.height / 2;
+                this.velocity = 0; this.rotation = 0;
+                this.scaleX = 1; this.scaleY = 1;
+                this.shield = false; this.magnetTimer = 0; this.invulnTimer = 0;
+                this.trail = [];
+            },
+            draw: function() {
+                // Disegna scia idrodinamica
+                for (let i = 0; i < this.trail.length; i++) {
+                    let tr = this.trail[i];
+                    ctx.fillStyle = `rgba(0, 250, 154, ${tr.alpha * 0.35})`;
+                    ctx.beginPath(); ctx.arc(tr.x, tr.y, tr.r, 0, Math.PI * 2); ctx.fill();
+                }
+
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                // Lampeggio se invulnerabile dopo rottura scudo
+                if (this.invulnTimer > 0 && Math.floor(frames / 3) % 2 === 0) ctx.globalAlpha = 0.4;
+
+                // Aura Magnete
+                if (this.magnetTimer > 0) {
+                    ctx.strokeStyle = `rgba(255, 215, 0, ${0.4 + Math.sin(frames * 0.2) * 0.3})`;
+                    ctx.lineWidth = 3; ctx.beginPath();
+                    ctx.arc(0, 0, 32 + Math.sin(frames * 0.15) * 4, 0, Math.PI * 2); ctx.stroke();
+                }
+
+                // Bolla Scudo
+                if (this.shield) {
+                    ctx.fillStyle = "rgba(0, 255, 255, 0.22)";
+                    ctx.strokeStyle = "#00FFFF"; ctx.lineWidth = 2.5;
+                    ctx.beginPath(); ctx.arc(0, 0, 28, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                }
+
+                this.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.09)));
+                ctx.rotate(this.rotation);
+                ctx.scale(this.scaleX, this.scaleY);
+
+                ctx.font = "45px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.fillStyle = "#FFFFFF"; 
+                ctx.fillText(currentSkin, 0, 0); 
+                ctx.restore();
+            },
+            update: function() {
+                if (gameState !== "PLAYING") return;
+                this.velocity += this.gravity; 
+                this.y += this.velocity;
+
+                // Ritorno elastico Squash & Stretch
+                this.scaleX += (1 - this.scaleX) * 0.15;
+                this.scaleY += (1 - this.scaleY) * 0.15;
+
+                if (this.magnetTimer > 0) this.magnetTimer--;
+                if (this.invulnTimer > 0) this.invulnTimer--;
+
+                // Aggiorna scia
+                if (frames % 2 === 0) {
+                    this.trail.push({ x: this.x - 12, y: this.y, r: 8, alpha: 1 });
+                }
+                for (let i = this.trail.length - 1; i >= 0; i--) {
+                    this.trail[i].x -= 3;
+                    this.trail[i].r *= 0.92;
+                    this.trail[i].alpha -= 0.06;
+                    if (this.trail[i].alpha <= 0) this.trail.splice(i, 1);
+                }
+
+                // Limiti schermo
+                if (this.y >= canvas.height - 25 || this.y <= 25) {
+                    if (this.shield) {
+                        this.shield = false; this.invulnTimer = 45;
+                        this.velocity = this.y <= 25 ? 5 : -8;
+                        playSound('shieldBreak');
+                        spawnFloatingText(this.x, this.y, dict[currentLang].shieldBreak, "#00FFFF");
+                    } else if (this.invulnTimer <= 0) {
+                        triggerGameOver();
+                    }
+                }
+            },
+            flap: function() {
+                this.velocity = this.jump;
+                this.scaleX = 1.28; this.scaleY = 0.75; // Effetto elastico al salto
+                playSound('flap');
+                spawnParticles(this.x - 10, this.y + 10, "#ffffff", 5);
+            }
+        };
+
+        // ELEMENTI DI SFONDO & EFFETTI VISIVI
+        function initEnvironment() {
+            bgHills = [];
+            for (let i = 0; i < 6; i++) {
+                bgHills.push({ x: i * 180, w: 220 + Math.random() * 100, h: 70 + Math.random() * 90 });
+            }
+            bgFish = [];
+            for (let i = 0; i < 4; i++) {
+                bgFish.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, s: 0.6 + Math.random() * 1, size: 14 + Math.random() * 10 });
+            }
+        }
+
+        function drawEnvironment() {
+            let bIndex = Math.floor(score / 12) % biomes.length;
+            let b = biomes[bIndex];
+
+            // Sfondo gradiente dinamico
+            let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            bgGrad.addColorStop(0, b.top); bgGrad.addColorStop(1, b.bot);
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Raggi di sole sottomarini
+            ctx.save();
+            ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
+            for (let i = 0; i < 3; i++) {
+                let rayX = ((i * 220) + Math.sin(frames * 0.01 + i) * 40) % (canvas.width + 200) - 100;
+                ctx.beginPath();
+                ctx.moveTo(rayX, 0); ctx.lineTo(rayX + 70, 0);
+                ctx.lineTo(rayX - 80, canvas.height); ctx.lineTo(rayX - 170, canvas.height);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Pesciolini in lontananza
+            ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+            bgFish.forEach(f => {
+                ctx.font = `${f.size}px Arial`;
+                ctx.fillText("🐟", f.x, f.y);
+                if (gameState === "PLAYING") f.x -= f.s;
+                else f.x -= f.s * 0.3;
+                if (f.x < -30) { f.x = canvas.width + 30; f.y = Math.random() * (canvas.height - 100); }
+            });
+
+            // Rocce abissali in parallasse
+            ctx.fillStyle = "rgba(0, 8, 20, 0.45)";
+            bgHills.forEach(h => {
+                ctx.beginPath();
+                ctx.arc(h.x, canvas.height + 20, h.h, Math.PI, 0);
+                ctx.fill();
+                if (gameState === "PLAYING") h.x -= 1;
+                if (h.x + h.h < 0) h.x = canvas.width + h.h;
+            });
+        }
+
+        function spawnParticles(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6,
+                    r: Math.random() * 4 + 2, color: color, alpha: 1
+                });
+            }
+        }
+
+        function spawnFloatingText(x, y, text, color) {
+            floatingTexts.push({ x: x, y: y, text: text, color: color, alpha: 1, vy: -1.5 });
+        }
+
+        function drawEffects() {
+            // Particelle
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                ctx.fillStyle = p.color; ctx.globalAlpha = p.alpha;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+                p.x += p.vx; p.y += p.vy; p.alpha -= 0.035;
+                if (p.alpha <= 0) particles.splice(i, 1);
+            }
+            ctx.globalAlpha = 1;
+
+            // Testi Fluttuanti
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                let ft = floatingTexts[i];
+                ctx.save();
+                ctx.font = "bold 18px 'Segoe UI', sans-serif";
+                ctx.fillStyle = ft.color; ctx.globalAlpha = ft.alpha;
+                ctx.shadowColor = "#000"; ctx.shadowBlur = 4;
+                ctx.textAlign = "center";
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+                ft.y += ft.vy; ft.alpha -= 0.022;
+                if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+            }
+        }
+
+        // OSTACOLI, PERLE E POWER-UPS
+        function spawnObstacle() {
+            if (framesUntilSpawn <= 0) {
+                let currentGap = Math.max(122, 188 - (score * 1.6)); 
+                let minHeight = 75;
+                let maxHeight = canvas.height - currentGap - minHeight;
+                let topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1) + minHeight);
+                
+                // Scelta oggetto collezionabile nel varco
+                let itemType = null;
+                let rand = Math.random();
+                if (rand < 0.07) itemType = "SHIELD";       // 7% Scudo
+                else if (rand < 0.14) itemType = "MAGNET";  // 7% Magnete
+                else if (rand < 0.26) itemType = "GOLD";    // 12% Perla Dorata (+5)
+                else if (rand < 0.65) itemType = "PEARL";   // 39% Perla Normale (+1)
+
+                // Coralli mobili dopo 15 punti
+                let isMoving = score >= 15 && Math.random() < 0.35;
+
+                obstacles.push({ 
+                    x: canvas.width, width: 62, topHeight: topHeight, 
+                    gap: currentGap, passed: false, 
+                    itemType: itemType, itemX: canvas.width + 31, 
+                    itemY: topHeight + currentGap / 2,
+                    isMoving: isMoving, moveDir: Math.random() < 0.5 ? 1 : -1
+                });
+                
+                framesUntilSpawn = Math.max(68, 108 - Math.floor(score * 0.9));
+            }
+            framesUntilSpawn--;
+        }
+
+        function drawObstacles() {
+            let currentSpeed = 3.5 + Math.min(3.5, score * 0.045);
+            let b = biomes[Math.floor(score / 12) % biomes.length];
+
+            for (let i = 0; i < obstacles.length; i++) {
+                let obs = obstacles[i];
+                if (gameState === "PLAYING") {
+                    obs.x -= currentSpeed;
+                    obs.itemX -= currentSpeed;
+
+                    // Oscillazione verticale coralli mobili
+                    if (obs.isMoving) {
+                        obs.topHeight += obs.moveDir * 1.1;
+                        if (obs.topHeight < 65 || obs.topHeight + obs.gap > canvas.height - 65) {
+                            obs.moveDir *= -1;
+                        }
+                        if (obs.itemType && player.magnetTimer <= 0) {
+                            obs.itemY = obs.topHeight + obs.gap / 2;
+                        }
+                    }
+                }
+                
+                let bottomY = obs.topHeight + obs.gap;
+                let bottomHeight = canvas.height - bottomY;
+
+                // Disegno Coralli
+                let gradient = ctx.createLinearGradient(obs.x, 0, obs.x + obs.width, 0);
+                gradient.addColorStop(0, b.coral1); gradient.addColorStop(0.5, b.coral2); gradient.addColorStop(1, b.coral1);
+                ctx.fillStyle = gradient;
+                
+                ctx.fillRect(obs.x, 0, obs.width, obs.topHeight);
+                ctx.fillRect(obs.x, bottomY, obs.width, bottomHeight);
+                
+                // Punte coralli arrotondate
+                ctx.fillStyle = b.tip;
+                ctx.beginPath(); ctx.roundRect(obs.x - 5, obs.topHeight - 20, obs.width + 10, 20, 6); ctx.fill();
+                ctx.beginPath(); ctx.roundRect(obs.x - 5, bottomY, obs.width + 10, 20, 6); ctx.fill();
+
+                // Disegno e Logica Oggetti Collezionabili
+                if (obs.itemType) {
+                    // Attrazione Magnete
+                    if (gameState === "PLAYING" && player.magnetTimer > 0 && Math.hypot(player.x - obs.itemX, player.y - obs.itemY) < 230) {
+                        obs.itemX += (player.x - obs.itemX) * 0.14;
+                        obs.itemY += (player.y - obs.itemY) * 0.14;
+                    }
+
+                    ctx.font = "26px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    ctx.fillStyle = "#FFFFFF";
+                    let floatY = Math.sin(frames * 0.08) * 5;
+                    let icon = obs.itemType === "PEARL" ? "⚪" : obs.itemType === "GOLD" ? "🟡" : obs.itemType === "SHIELD" ? "🛡️" : "🧲";
+                    ctx.fillText(icon, obs.itemX, obs.itemY + floatY);
+                    
+                    // Raccolta oggetto
+                    let dist = Math.hypot(player.x - obs.itemX, player.y - (obs.itemY + floatY));
+                    if (gameState === "PLAYING" && dist < 32) {
+                        if (obs.itemType === "PEARL") {
+                            sessionPearls += 1; playSound('pearl');
+                            spawnParticles(obs.itemX, obs.itemY, "#FFFFFF", 8);
+                            spawnFloatingText(obs.itemX, obs.itemY, "+1 ⚪", "#FFFFFF");
+                        } else if (obs.itemType === "GOLD") {
+                            sessionPearls += 5; playSound('gold');
+                            spawnParticles(obs.itemX, obs.itemY, "#FFD700", 14);
+                            spawnFloatingText(obs.itemX, obs.itemY, "+5 🟡", "#FFD700");
+                        } else if (obs.itemType === "SHIELD") {
+                            player.shield = true; playSound('powerup');
+                            spawnParticles(obs.itemX, obs.itemY, "#00FFFF", 14);
+                            spawnFloatingText(obs.itemX, obs.itemY, dict[currentLang].shieldOn, "#00FFFF");
+                        } else if (obs.itemType === "MAGNET") {
+                            player.magnetTimer = 480; playSound('powerup'); // 8 secondi
+                            spawnParticles(obs.itemX, obs.itemY, "#FFD700", 14);
+                            spawnFloatingText(obs.itemX, obs.itemY, dict[currentLang].magnetOn, "#FFD700");
+                        }
+                        obs.itemType = null;
+                        document.getElementById('pearlInGameDisplay').innerText = "⚪ " + sessionPearls;
+                    }
+                }
+
+                // Controllo Collisioni
+                let hitboxRadius = 15; 
+                let inXRange = (player.x + hitboxRadius > obs.x) && (player.x - hitboxRadius < obs.x + obs.width);
+                if (gameState === "PLAYING" && player.invulnTimer <= 0 && inXRange && (player.y - hitboxRadius < obs.topHeight || player.y + hitboxRadius > bottomY)) {
+                    if (player.shield) {
+                        player.shield = false; player.invulnTimer = 45;
+                        screenShake = 8; playSound('shieldBreak');
+                        spawnParticles(player.x, player.y, "#00FFFF", 18);
+                        spawnFloatingText(player.x, player.y - 20, dict[currentLang].shieldBreak, "#00FFFF");
+                    } else {
+                        triggerGameOver();
+                    }
+                }
+
+                // Superamento Ostacolo + Controllo "Near Miss" (Al Pelo!)
+                if (!obs.passed && player.x > obs.x + obs.width) {
+                    score++;
+                    obs.passed = true;
+                    playSound('score');
+
+                    // Controlla se è passato vicinissimo ai bordi (< 26px)
+                    let topMargin = (player.y - hitboxRadius) - obs.topHeight;
+                    let botMargin = bottomY - (player.y + hitboxRadius);
+                    if (Math.min(topMargin, botMargin) < 26) {
+                        sessionPearls += 2;
+                        document.getElementById('pearlInGameDisplay').innerText = "⚪ " + sessionPearls;
+                        spawnFloatingText(player.x, player.y - 25, dict[currentLang].nearMiss, "#00FA9A");
+                    }
+
+                    const scoreEl = document.getElementById('scoreDisplay');
+                    scoreEl.innerText = score;
+                    scoreEl.style.color = "#FFD700";
+                    scoreEl.style.transform = "scale(1.25)";
+                    setTimeout(() => { scoreEl.style.color = "#FFF"; scoreEl.style.transform = "scale(1)"; }, 220);
+                }
+            }
+            if (obstacles.length > 0 && obstacles[0].x < -100) obstacles.shift();
+        }
+
+        function updatePowerupHud() {
+            const container = document.getElementById('powerupHud');
+            if (gameState !== "PLAYING") { container.innerHTML = ""; return; }
+            let html = "";
+            if (player.shield) html += `<div class="pu-tag">${dict[currentLang].shieldOn}</div>`;
+            if (player.magnetTimer > 0) html += `<div class="pu-tag" style="border-color:#FFD700">${dict[currentLang].magnetOn}: ${Math.ceil(player.magnetTimer / 60)}s</div>`;
+            container.innerHTML = html;
+        }
+
+        // MAIN LOOP
+        function mainLoop() {
+            ctx.save();
+            if (screenShake > 0) {
+                ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+                screenShake *= 0.85;
+                if (screenShake < 0.5) screenShake = 0;
+            }
+
+            drawEnvironment();
+            if (gameState === "PLAYING") { spawnObstacle(); frames++; }
+            drawObstacles();
+            player.update(); 
+            player.draw();
+            drawEffects();
+            updatePowerupHud();
+
+            ctx.restore();
+            requestAnimationFrame(mainLoop);
+        }
+
+        // TRADUZIONI E UI
+        function toggleAudio() {
+            isAudioEnabled = !isAudioEnabled;
+            localStorage.setItem("octoAudio", isAudioEnabled);
+            applyTranslations();
+        }
+
+        function toggleLang() {
+            currentLang = currentLang === "it" ? "en" : "it";
+            localStorage.setItem("octoLang", currentLang);
+            applyTranslations();
+        }
+
+        function applyTranslations() {
+            const t = dict[currentLang];
+            document.getElementById('txtSubtitle').innerText = t.subtitle;
+            document.getElementById('btnPlay').innerText = t.play;
+            document.getElementById('btnShopMenu').innerText = t.shopMenu;
+            document.getElementById('btnSettingsMenu').innerText = t.settingsMenu;
+            
+            document.getElementById('titleSettings').innerText = t.settingsTitle;
+            document.getElementById('btnLangToggle').innerText = t.langBtn;
+            document.getElementById('btnAudioToggle').innerText = isAudioEnabled ? t.audioOn : t.audioOff;
+            document.getElementById('btnBackSettings').innerText = t.back;
+
+            document.getElementById('titleShop').innerText = t.shopTitle;
+            document.getElementById('btnBackShop').innerText = t.back;
+
+            document.getElementById('titlePause').innerText = t.pauseTitle;
+            document.getElementById('btnResume').innerText = t.resume;
+            document.getElementById('btnPauseMenu').innerText = t.mainMenu;
+
+            document.getElementById('titleGameOver').innerText = t.gameOver;
+            document.getElementById('btnRetry').innerText = t.retry;
+            document.getElementById('btnMenu').innerText = t.mainMenu;
+
+            updateUITexts();
+            if (document.getElementById('shopScreen').style.display === "block") renderShop();
+        }
+
+        function updateUITexts() {
+            const t = dict[currentLang];
+            document.getElementById('menuPearlTotal').innerText = `⚪ ${t.pearls}: ${pearlsTotal}`;
+            document.getElementById('shopPearlTotal').innerText = `⚪ ${t.pearls}: ${pearlsTotal}`;
+            
+            document.getElementById('finalScore').innerText = `${t.score}: ${score}`;
+            document.getElementById('highScore').innerText = `${t.record}: ${highScore}`;
+            document.getElementById('earnedPearlsTxt').innerText = `+${sessionPearls} ⚪`;
+            document.getElementById('gameOverPearlTotal').innerText = `⚪ ${t.total}: ${pearlsTotal}`;
+        }
+
+        function renderShop() {
+            const container = document.getElementById('shopContainer');
+            const t = dict[currentLang];
+            container.innerHTML = "";
+            
+            shopItems.forEach(item => {
+                let isUnlocked = unlockedSkins.includes(item.emoji);
+                let isEquipped = currentSkin === item.emoji;
+                let itemName = currentLang === "it" ? item.nameIT : item.nameEN;
+                
+                let btnHTML = isEquipped ? `<button class="shop-btn equip">${t.equipped}</button>` :
+                              isUnlocked ? `<button class="shop-btn equip" onclick="equipSkin('${item.emoji}')">${t.equip}</button>` :
+                              `<button class="shop-btn buy" onclick="buySkin('${item.emoji}', ${item.cost})">⚪ ${item.cost}</button>`;
+
+                container.innerHTML += `
+                    <div class="shop-item ${isEquipped ? 'equipped' : ''}">
+                        <div class="shop-emoji">${item.emoji}</div>
+                        <div style="color:white; font-size:13px; font-weight:600;">${itemName}</div>
+                        ${btnHTML}
+                    </div>
+                `;
+            });
+        }
+
+        function buySkin(emoji, cost) {
+            initAudio();
+            if (pearlsTotal >= cost) {
+                pearlsTotal -= cost;
+                unlockedSkins.push(emoji);
+                localStorage.setItem("octoPearls", pearlsTotal);
+                localStorage.setItem("octoUnlocked", JSON.stringify(unlockedSkins));
+                equipSkin(emoji);
+                playSound('gold');
+            } else {
+                alert(dict[currentLang].noPearls);
+            }
+        }
+
+        function equipSkin(emoji) {
+            initAudio();
+            currentSkin = emoji;
+            localStorage.setItem("octoCurrentSkin", currentSkin);
+            updateUITexts();
+            renderShop();
+        }
+
+        // NAVIGAZIONE MENU E STATI
+        function openShop() {
+            initAudio();
+            document.getElementById('startScreen').style.display = "none";
+            document.getElementById('shopScreen').style.display = "block";
+            updateUITexts(); renderShop();
+            document.getElementById('shopScreen').scrollTop = 0;
+        }
+
+        function closeShop() {
+            document.getElementById('shopScreen').style.display = "none";
+            document.getElementById('startScreen').style.display = "block";
+            updateUITexts();
+        }
+
+        function openSettings() {
+            initAudio();
+            document.getElementById('startScreen').style.display = "none";
+            document.getElementById('settingsScreen').style.display = "block";
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsScreen').style.display = "none";
+            document.getElementById('startScreen').style.display = "block";
+        }
+
+        function togglePause() {
+            if (gameState === "PLAYING") {
+                gameState = "PAUSED";
+                document.getElementById('pauseScreen').style.display = "block";
+            } else if (gameState === "PAUSED") {
+                gameState = "PLAYING";
+                document.getElementById('pauseScreen').style.display = "none";
+            }
+        }
+
+        function startGame() {
+            initAudio();
+            document.getElementById('startScreen').style.display = "none";
+            document.getElementById('gameOverScreen').style.display = "none";
+            document.getElementById('pauseScreen').style.display = "none";
+            document.getElementById('hud').style.display = "flex";
+            
+            score = 0; frames = 0; sessionPearls = 0; 
+            obstacles = []; particles = []; floatingTexts = [];
+            framesUntilSpawn = 15; 
+            
+            document.getElementById('scoreDisplay').innerText = "0";
+            document.getElementById('pearlInGameDisplay').innerText = "⚪ 0";
+            
+            player.init();
+            gameState = "PLAYING";
+        }
+
+        function triggerGameOver() {
+            if (gameState === "GAMEOVER") return; 
+            
+            gameState = "GAMEOVER";
+            screenShake = 14;
+            playSound('die');
+            spawnParticles(player.x, player.y, "#ff4757", 20);
+            document.getElementById('hud').style.display = "none";
+            
+            // Controllo Nuovo Record
+            let isNewRecord = false;
+            if (score > highScore) { 
+                highScore = score; 
+                localStorage.setItem("octoHighScore", highScore); 
+                isNewRecord = true;
+            }
+            document.getElementById('newRecordBadge').style.display = isNewRecord ? "inline-block" : "none";
+
+            // Assegnazione Medaglia
+            let medal = "🐚";
+            if (score >= 40) medal = "💎";
+            else if (score >= 25) medal = "🥇";
+            else if (score >= 10) medal = "🥈";
+            else if (score >= 5) medal = "🥉";
+            document.getElementById('medalIcon').innerText = medal;
+
+            pearlsTotal += sessionPearls;
+            localStorage.setItem("octoPearls", pearlsTotal);
+            
+            updateUITexts();
+            document.getElementById('gameOverScreen').style.display = "block";
+        }
+
+        function backToMenu() {
+            document.getElementById('gameOverScreen').style.display = "none";
+            document.getElementById('pauseScreen').style.display = "none";
+            document.getElementById('hud').style.display = "none";
+            document.getElementById('startScreen').style.display = "block";
+            obstacles = []; floatingTexts = []; player.init(); updateUITexts();
+            gameState = "MENU";
+        }
+
+        function handleInput(e) {
+            if (e.target.closest('button') || e.target.closest('.menu-screen')) return;
+            e.preventDefault();
+            initAudio(); 
+            if (gameState === "PLAYING") player.flap();
+        }
+
+        window.addEventListener('touchstart', handleInput, {passive: false});
+        window.addEventListener('mousedown', handleInput);
+
+        initEnvironment();
+        applyTranslations();
+        player.init();
+        mainLoop();
+    </script>
+</body>
+</html>
